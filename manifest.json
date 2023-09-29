@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "HelpMeOut",
+    "version": "1.0",
+    "description": "You record and share help videos with ease.",
+    "permissions": ["tabCapture", "activeTab", "desktopCapture", "storage", "audioCapture"],
+    "author": "Olumide Bambe",
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "assets/icon.png",
+            "48": "assets/icon.png",
+            "128": "assets/icon.png"
+        }
+    },
+    "background": {
+      "service_worker": "background.js"
+    },
+    "icons": {
+        "16": "assets/icon.png",
+        "48": "assets/icon.png",
+        "128": "assets/icon.png"
+    },
+    "content_scripts": [
+        {
+          "matches": ["<all_urls>"],
+          "js": ["content.js"]
+        }
+    ]
+}
+  
