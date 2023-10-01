@@ -8,13 +8,13 @@
 
 .injection-wrapper{
     position:fixed;
-    bottom:3rem; 
-    left: 40%;
-    transform: translateX(-50%);
+    bottom:1rem; 
+    left: 20%;
     z-index: 9999;
     display: flex;
     align-items: center;
     gap: 40px;
+    min-height: 156px;
 }
 .video-wrapper{
     height: 156px;
@@ -24,8 +24,11 @@
     background-color: #B6B6B6;
     padding: 4px;
     overflow: hidden;
+    display: none;
 }
-
+.show{
+    display: block;
+}
 .control-wrapper{
     border-radius: 200px;
     background-color: #141414;
@@ -36,6 +39,11 @@
     width: fit-content;
     border: 8px solid #E8E8E8;
 }
+#video-preview{
+    height: 158px;
+    width: 158px;
+    object-fit: cover;
+}
 .record-time{
     padding: 16px;
     border-right: 1px solid #FFF;
@@ -45,6 +53,10 @@
     font-family: 'Inter', sans-serif;
     font-size: 20px;
     font-weight: 500;
+}
+.current-time{
+    display: block;
+    width: 76px;
 }
 .control-button-wrapper{
     display: flex;

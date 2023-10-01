@@ -3,15 +3,24 @@ let recorder;
 let recordedChunks = [];
 let wrapper;
 let timer;
+let isCameraEnabled;
+let isAudioEnabled;
+let videoStream;
+let screenStream;
 
 chrome.runtime.onMessage.addListener(async(message, sender, sendResponse) => {
+    isCameraEnabled = message.isVideoEnabled; 
+    isAudioEnabled = message.isMicrophoneEnabled;
+    
     if(message.recordType === "current_tab"){
         recordCurrentTab(message.streamId, message.tabId)
     }
 
     if(message.recordType === "full_screen"){
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" } });
-        recordScreen(stream);  
+        console.log(isCameraEnabled, isAudioEnabled)
+        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" }, audio: isAudioEnabled });
+        recordScreen(stream);
+        screenStream = stream;  
     };
 });
 
@@ -54,7 +63,8 @@ async function recordCurrentTab(streamId,tabId){
                         tracks.total[i].stop();
                     }
                 }
-                stopRecord(recordedChunks)
+                stopRecord(recordedChunks);
+                stopVideoStream();
             }
             mediaRecorder.ondataavailable = e => {
                 if (e.data.size > 0) {
@@ -77,63 +87,30 @@ function stopRecord(recordedChunks){
         mediaRecorder.stop();
     }
     var blob = new Blob(recordedChunks, {
-        'type': 'video/mp4'
+        'type': 'video/webm'
     });
     var url = URL.createObjectURL(blob);
-    console.log(url);
 
-    savingToEndpoint(blob);
+    const reader = new FileReader();
+    reader.onloadend = function() {
+        // The result attribute contains the data as a Base64 encoded string
+        const base64String = reader.result.split(',')[1];
+        // savingToEndpoint(base64String);
+    };
 
-    // const reader = new FileReader();
-    // reader.onloadend = function () {
-    //     const dataUrl = reader.result;
-    //     // Now, `dataUrl` contains the video data encoded as a base64 string within a URL.
-    //     console.log('Data URL for the video:', dataUrl);
-    // };
-    // reader.readAsDataURL(blob);
+    // Read the video Blob as Data URL (which is a Base64 representation)
+    reader.readAsDataURL(blob);
 
+    // savingToEndpoint(blob);
       
-    // const downloadLink = document.createElement('a');
+    const downloadLink = document.createElement('a');
 
     // // Set the anchor's attributes
-    // downloadLink.href = url;
-    // downloadLink.download = 'demo.mp4'; // Specify the desired filename
+    downloadLink.href = url;
+    downloadLink.download = 'demo.mp4'; // Specify the desired filename
 
     // // Programmatically trigger a click event on the anchor to initiate the download
-    // downloadLink.click();
-}
-
-
-  
-function recordTab(stream){
-    console.log(stream)
-    recorder = new MediaRecorder(stream);
-  
-    recorder.ondataavailable = (event) => {
-      console.log('data size available guys')
-      if (event.data.size > 0) {
-        recordedChunks.push(event.data);
-      }
-    };
-  
-    // Start recording.
-    recorder.start();
-  
-    // Stop recording after 5 seconds.
-    setTimeout(function() {
-      recorder.stop();
-      stopTimer()
-    }, 5000);
-  
-    // Get the recorded data.
-    recorder.onstop = function(event) {
-        processRecording(recordedChunks);
-        stopTimer();
-    };
-  
-    recorder.onstart = () => {
-          recordCounter();
-    }
+    downloadLink.click();
 }
   
 function recordScreen(stream){
@@ -146,7 +123,9 @@ function recordScreen(stream){
     };
   
     mediaRecorder.onstop = () => {
-        processRecording(recordedChunks)
+        processRecording(recordedChunks);
+        stopScreenCapture();
+        stopVideoStream();
     };
   
     mediaRecorder.onstart = () => {
@@ -227,7 +206,7 @@ function injectHtml(){
                             </svg>
                             Stop
                         </button>
-                        <button class="control-button">
+                        <button class="control-button" id="cameraButton">
                             <p class="btn-wrapper">
                                 <svg width="48" height="54" viewBox="0 0 48 54" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="white"/>
@@ -296,8 +275,11 @@ function injectHtml(){
     `
     document.body.appendChild(wrapper);
     document.getElementById('stopButton').addEventListener('click', stopMediaRecording);
+    document.getElementById('cameraButton').addEventListener('click', toggleVideo);
     recordCounter();
-    videoOn();
+    if(isCameraEnabled){
+        videoOn();
+    }
 }
 
 function stopMediaRecording(){
@@ -306,17 +288,32 @@ function stopMediaRecording(){
     stopTimer();
 }
 
+function toggleVideo(){
+    if(isCameraEnabled){
+        stopVideoStream();
+        isCameraEnabled = false;
+    }else{
+        videoOn();
+        isCameraEnabled = true;
+    }
+}
+
 function savingToEndpoint(videoBlob){
     const videoFile = new File([videoBlob], 'recorded_video.webm', { type: 'video/webm' });
 
-    const formData = new FormData();
-    formData.append('video', videoFile);  
+    // const formData = new FormData();
+    // formData.append('video', videoFile);  
+
+    // console.log(formData)
+
+    const apiData = JSON.stringify({video_base64: videoBlob});
+    console.log(apiData);
 
     fetch('https://yms.pythonanywhere.com/api', {
         method: 'POST',
-        body: formData,
+        body: apiData,
         headers: {
-            "Content-Type": "application/octet-stream"
+            "Content-Type": "application/json"
         },
         
       })
@@ -334,7 +331,41 @@ function savingToEndpoint(videoBlob){
 }
 
 async function videoOn(){
-    const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-    console.log(videoStream);
-    document.getElementById('video-preview').src = "https://www.w3schools.com/tags/movie.mp4";
+    document.querySelector('.video-wrapper').classList.add('show')
+    videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById('video-preview').srcObject = videoStream;
+    document.getElementById('video-preview').play();
+}
+
+function stopVideoStream(){
+    if(!videoStream) return;
+    const tracks = videoStream.getTracks();
+
+    // Iterate through tracks and stop them
+    tracks.forEach(function(track) {
+        track.stop();
+    });
+
+    if(document.querySelector('.video-wrapper')){
+        document.querySelector('.video-wrapper').classList.remove('show');
+    }
+
+    // Clear the srcObject to stop video playback
+    const videoElement = document.getElementById('video-preview');
+    if (videoElement.srcObject) {
+        videoElement.srcObject = null;
+    }
+} 
+
+function stopScreenCapture(){
+    if (screenStream) {
+        // Get all tracks in the stream
+        const tracks = screenStream.getTracks();
+
+        // Iterate through tracks and stop them
+        tracks.forEach(function(track) {
+            track.stop();
+        });
+        screenStream = null;
+    }
 }

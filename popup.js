@@ -2,7 +2,7 @@ const startButton = document.getElementById("startButton");
 const stopButton = document.getElementById("stopButton");
 
 let recordType = 'current_tab';
-let isVideoEnabled = true;
+let isVideoEnabled = false;
 let isMicrophoneEnabled = true;
 let timer;
 
@@ -10,7 +10,7 @@ startButton.addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
   chrome.tabCapture.getMediaStreamId({consumerTabId: tab.id}, async (streamId) => {
-    const response = await chrome.tabs.sendMessage(tab.id, {recordType, streamId, tabId: tab.id});
+    const response = await chrome.tabs.sendMessage(tab.id, {recordType, streamId, tabId: tab.id, isVideoEnabled, isMicrophoneEnabled});
   });
 });
 

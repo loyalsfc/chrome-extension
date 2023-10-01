@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HelpMeOut</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="shortcut icon" href="assets/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="style.css">
     <script src="popup.js" defer></script>
 </head>
 <body>
@@ -68,7 +67,7 @@
                         </svg>
                         <span>Microphone</span>
                         <div class="ml-auto">
-                            <input type="checkbox" name="microphone-toggle" id="microphone-toggle" class="media-checkbox">
+                            <input checked type="checkbox" name="microphone-toggle" id="microphone-toggle" class="media-checkbox">
                             <label for="microphone-toggle" class="media-toggle"></label>
                         </div>
                     </li>
@@ -77,7 +76,7 @@
             </main>
         </div>
 
-        <div class="injection-wrapper">
+        <div class="injection-wrapper" style="display: none;">
             <div class="video-wrapper">
                 <video src="" id="video-preview"></video>
             </div>
