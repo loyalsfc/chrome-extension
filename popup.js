@@ -8,23 +8,10 @@ let timer;
 
 startButton.addEventListener("click", async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
   chrome.tabCapture.getMediaStreamId({consumerTabId: tab.id}, async (streamId) => {
     const response = await chrome.tabs.sendMessage(tab.id, {recordType, streamId, tabId: tab.id});
-    console.log(response);
   });
-  
-
-  // chrome.tabs.query({ currentWindow: true, active: true }, function (e) {
-  //   var n = e[0];
-  //   chrome.tabs.sendMessage(n.id, {
-  //     message: 'get-page-title',
-  //   }).then((response) => {
-  //     console.log(response.pageTitle);
-  //   });
-      // chrome.tabCapture.getMediaStreamId({consumerTabId: n.id}, (streamId) => {
-      //   chrome.tabs.sendMessage(n.id, {type: recordType, streamId:streamId, tabId: n.id});
-      // });
-  // });
 });
 
 stopButton.addEventListener("click", () => {
@@ -54,24 +41,3 @@ document.getElementById('video-toggle').addEventListener('change', (event) => {
 document.getElementById('microphone-toggle').addEventListener('change', (event) => {
   isMicrophoneEnabled = event.target.checked
 })
-
-
-
-
-
-
-
-
-// document.addEventListener('DOMContentLoaded', function() {
-//   document.getElementById('startRecording').addEventListener('click', function() {
-//       chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-//           chrome.tabs.executeScript(
-//               tabs[0].id,
-//               {code: `
-//                   ${startScreenRecording}
-//                   startScreenRecording();
-//               `}
-//           );
-//       });
-//   });
-// });

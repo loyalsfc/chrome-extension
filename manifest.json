@@ -3,7 +3,8 @@
     "name": "HelpMeOut",
     "version": "1.0",
     "description": "You record and share help videos with ease.",
-    "permissions": ["tabCapture", "activeTab", "desktopCapture", "storage", "audioCapture"],
+    "permissions": ["tabCapture", "activeTab", "desktopCapture", "storage", "audioCapture", "tabs", "scripting"],
+    "host_permissions": ["<all_urls>"],
     "author": "Olumide Bambe",
     "action": {
         "default_popup": "popup.html",
