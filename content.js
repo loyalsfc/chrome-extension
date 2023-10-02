@@ -1,12 +1,12 @@
-let mediaRecorder;
-let recorder;
-let recordedChunks = [];
-let wrapper;
-let timer;
-let isCameraEnabled;
-let isAudioEnabled;
-let videoStream;
-let screenStream;
+var mediaRecorder;
+var recorder;
+var recordedChunks = [];
+var wrapper;
+var timer;
+var isCameraEnabled;
+var isAudioEnabled;
+var videoStream;
+var screenStream;
 
 chrome.runtime.onMessage.addListener(async(message, sender, sendResponse) => {
     isCameraEnabled = message.isVideoEnabled; 
@@ -18,7 +18,7 @@ chrome.runtime.onMessage.addListener(async(message, sender, sendResponse) => {
 
     if(message.recordType === "full_screen"){
         console.log(isCameraEnabled, isAudioEnabled)
-        const stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" }, audio: isAudioEnabled });
+        var stream = await navigator.mediaDevices.getDisplayMedia({ video: { mediaSource: "screen" }, audio: isAudioEnabled });
         recordScreen(stream);
         screenStream = stream;  
     };
@@ -26,31 +26,36 @@ chrome.runtime.onMessage.addListener(async(message, sender, sendResponse) => {
 
 async function recordCurrentTab(streamId,tabId){
     config = {
+        "audio": {
+            "mandatory": {
+                "chromeMediaSourceId": streamId,
+                "chromeMediaSource": "tab"
+            }
+        },
         "video": {
             "mandatory": {
                 "chromeMediaSourceId": streamId,
                 "chromeMediaSource": "tab"
             }
         },
-        "audio": {
-            "mandatory": {
-                "chromeMediaSourceId": streamId,
-                "chromeMediaSource": "tab"
-            }
-        }
     }
 
     navigator.mediaDevices.getUserMedia(config).then(function (desktop) {
             var stream = new MediaStream();
             if(desktop){
-                video = desktop.getVideoTracks()[0];
+                var video = desktop.getVideoTracks()[0];
                 stream.addTrack(video);
+             
+                if(isAudioEnabled){
+                    var audio = desktop.getAudioTracks()[0];
+                    stream.addTrack(audio);
+                }
             }
+
             mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'video/webm;codecs=h264',
             });
             
-            recordedChunks = [];
             mediaRecorder.onstop=function(){
                 var tracks = {};
                 tracks.a = stream ? stream.getTracks() : [];
@@ -91,26 +96,25 @@ function stopRecord(recordedChunks){
     });
     var url = URL.createObjectURL(blob);
 
-    const reader = new FileReader();
+    var reader = new FileReader();
     reader.onloadend = function() {
         // The result attribute contains the data as a Base64 encoded string
-        const base64String = reader.result.split(',')[1];
-        // savingToEndpoint(base64String);
+        var base64String = reader.result.split(',')[1];
+        savingToEndpoint(base64String);
     };
 
     // Read the video Blob as Data URL (which is a Base64 representation)
     reader.readAsDataURL(blob);
-
-    // savingToEndpoint(blob);
       
-    const downloadLink = document.createElement('a');
+    var downloadLink = document.createElement('a');
 
-    // // Set the anchor's attributes
+    // Set the anchor's attributes
     downloadLink.href = url;
     downloadLink.download = 'demo.mp4'; // Specify the desired filename
 
-    // // Programmatically trigger a click event on the anchor to initiate the download
+    // Programmatically trigger a click event on the anchor to initiate the download
     downloadLink.click();
+    recordedChunks.length = 0;
 }
   
 function recordScreen(stream){
@@ -136,21 +140,30 @@ function recordScreen(stream){
 }
   
 function processRecording(recordedChunks){
-    const blob = new Blob(recordedChunks, { type: "video/webm" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
+    var blob = new Blob(recordedChunks, { type: "video/webm" });
+    var reader = new FileReader();
+    reader.onloadend = function() {
+        // The result attribute contains the data as a Base64 encoded string
+        var base64String = reader.result.split(',')[1];
+        savingToEndpoint(base64String);
+    };
+    // Read the video Blob as Data URL (which is a Base64 representation)
+    reader.readAsDataURL(blob);
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement("a");
     a.style.display = "none";
     a.href = url;
     a.download = "screen-recording.webm";
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);
+    recordedChunks.length = 0;
 }
 
 function recordCounter(){
-    let hours = 0;
-    let minutes = 0;
-    let seconds = 1;
+    var hours = 0;
+    var minutes = 0;
+    var seconds = 0;
     timer = setInterval(function () {
       seconds++;
       if (seconds >= 60) {
@@ -163,7 +176,7 @@ function recordCounter(){
       }
   
       // Format the time as HH:MM:SS
-      let formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      var formattedTime = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
       document.getElementById('current-time').textContent = formattedTime;
     }, 1000);
 }
@@ -189,7 +202,7 @@ function injectHtml(){
                         </svg>            
                     </p>
                     <div class="control-button-wrapper">
-                        <button class="control-button">
+                        <button class="hmo-control-button">
                             <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="white"/>
                                 <path d="M18 16.5L18 27.5" stroke="black" stroke-width="2" stroke-linecap="round"/>
@@ -198,7 +211,7 @@ function injectHtml(){
                             </svg>
                             Pause              
                         </button>
-                        <button class="control-button" id="stopButton">
+                        <button class="hmo-control-button" id="stopButton">
                             <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="white"/>
                                 <path d="M15.25 17.5C15.25 16.2574 16.2574 15.25 17.5 15.25H26.5C27.7426 15.25 28.75 16.2574 28.75 17.5V26.5C28.75 27.7426 27.7426 28.75 26.5 28.75H17.5C16.2574 28.75 15.25 27.7426 15.25 26.5V17.5Z" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -206,12 +219,11 @@ function injectHtml(){
                             </svg>
                             Stop
                         </button>
-                        <button class="control-button" id="cameraButton">
+                        <button class="hmo-control-button" id="cameraButton">
                             <p class="btn-wrapper">
-                                <svg width="48" height="54" viewBox="0 0 48 54" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="white"/>
-                                    <path d="M25.75 20.5L30.4697 15.7803C30.9421 15.3079 31.75 15.6425 31.75 16.3107V27.6893C31.75 28.3575 30.9421 28.6921 30.4697 28.2197L25.75 23.5M14.5 28.75H23.5C24.7426 28.75 25.75 27.7426 25.75 26.5V17.5C25.75 16.2574 24.7426 15.25 23.5 15.25H14.5C13.2574 15.25 12.25 16.2574 12.25 17.5V26.5C12.25 27.7426 13.2574 28.75 14.5 28.75Z" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                </svg>
+                                <span id="camera-icon-wrapper">
+                                    ${isCameraEnabled ? cameraOffIcon : cameraOnIcon}
+                                </span>
 
                                 <svg class="svg-absolute" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <g filter="url(#filter0_d_597_1362)">
@@ -234,7 +246,7 @@ function injectHtml(){
                             </p>
                             Camera
                         </button>
-                        <button class="control-button">
+                        <button class="hmo-control-button">
                             <p class="btn-wrapper">
                                 <svg width="48" height="54" viewBox="0 0 48 54" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="white"/>
@@ -262,7 +274,7 @@ function injectHtml(){
                             </p>
                             Mic                    
                         </button>
-                        <button class="control-button">
+                        <button class="hmo-control-button">
                             <svg width="44" height="44" viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="#4B4B4B"/>
                                 <path d="M24.7404 19L24.3942 28M19.6058 28L19.2596 19M29.2276 15.7906C29.5696 15.8422 29.9104 15.8975 30.25 15.9563M29.2276 15.7906L28.1598 29.6726C28.0696 30.8448 27.0921 31.75 25.9164 31.75H18.0836C16.9079 31.75 15.9304 30.8448 15.8402 29.6726L14.7724 15.7906M29.2276 15.7906C28.0812 15.6174 26.9215 15.4849 25.75 15.3943M13.75 15.9563C14.0896 15.8975 14.4304 15.8422 14.7724 15.7906M14.7724 15.7906C15.9188 15.6174 17.0785 15.4849 18.25 15.3943M25.75 15.3943V14.4782C25.75 13.2988 24.8393 12.3142 23.6606 12.2765C23.1092 12.2589 22.5556 12.25 22 12.25C21.4444 12.25 20.8908 12.2589 20.3394 12.2765C19.1607 12.3142 18.25 13.2988 18.25 14.4782V15.3943M25.75 15.3943C24.5126 15.2987 23.262 15.25 22 15.25C20.738 15.25 19.4874 15.2987 18.25 15.3943" stroke="#BEBEBE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -289,27 +301,29 @@ function stopMediaRecording(){
 }
 
 function toggleVideo(){
+    let iconWrapper = document.getElementById('camera-icon-wrapper');
     if(isCameraEnabled){
         stopVideoStream();
         isCameraEnabled = false;
+        iconWrapper.innerHTML = cameraOnIcon;
     }else{
         videoOn();
         isCameraEnabled = true;
+        iconWrapper.innerHTML = cameraOffIcon;
     }
 }
 
 function savingToEndpoint(videoBlob){
-    const videoFile = new File([videoBlob], 'recorded_video.webm', { type: 'video/webm' });
+    var videoFile = new File([videoBlob], 'recorded_video.webm', { type: 'video/webm' });
 
-    // const formData = new FormData();
+    // var formData = new FormData();
     // formData.append('video', videoFile);  
 
     // console.log(formData)
 
-    const apiData = JSON.stringify({video_base64: videoBlob});
-    console.log(apiData);
+    var apiData = JSON.stringify({video_base64: videoBlob});
 
-    fetch('https://yms.pythonanywhere.com/api', {
+    fetch('https://yms.pythonanywhere.com/upload', {
         method: 'POST',
         body: apiData,
         headers: {
@@ -320,7 +334,7 @@ function savingToEndpoint(videoBlob){
       .then(response => response.json())
       .then(data => {
         console.log(data);
-        window.open('https://helpmeout-two.vercel.app/file/jdjdjdjdjdjd', "_blank");
+        window.open(`https://helpmeout-two.vercel.app/file/${data.video_id}`, "_blank");
       })
       .catch(error => {
         console.error('Error uploading video:', error);
@@ -339,7 +353,7 @@ async function videoOn(){
 
 function stopVideoStream(){
     if(!videoStream) return;
-    const tracks = videoStream.getTracks();
+    var tracks = videoStream.getTracks();
 
     // Iterate through tracks and stop them
     tracks.forEach(function(track) {
@@ -351,8 +365,8 @@ function stopVideoStream(){
     }
 
     // Clear the srcObject to stop video playback
-    const videoElement = document.getElementById('video-preview');
-    if (videoElement.srcObject) {
+    var videoElement = document.getElementById('video-preview');
+    if (videoElement && videoElement.srcObject) {
         videoElement.srcObject = null;
     }
 } 
@@ -360,7 +374,7 @@ function stopVideoStream(){
 function stopScreenCapture(){
     if (screenStream) {
         // Get all tracks in the stream
-        const tracks = screenStream.getTracks();
+        var tracks = screenStream.getTracks();
 
         // Iterate through tracks and stop them
         tracks.forEach(function(track) {
@@ -369,3 +383,17 @@ function stopScreenCapture(){
         screenStream = null;
     }
 }
+
+var cameraOffIcon = ` <svg width="54" height="54" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" class="icon">
+    <g fill="none" stroke="#0F172A" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+        <path d="m3 3l18 18m-6-10v-1l4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-.675.946"/>
+        <path d="M10 6h3a2 2 0 0 1 2 2v3m0 4v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h1"/>
+    </g>
+</svg>`;
+
+var cameraOnIcon = `
+    <svg width="48" height="54" viewBox="0 0 48 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0.5" y="0.5" width="43" height="43" rx="21.5" fill="white"/>
+        <path d="M25.75 20.5L30.4697 15.7803C30.9421 15.3079 31.75 15.6425 31.75 16.3107V27.6893C31.75 28.3575 30.9421 28.6921 30.4697 28.2197L25.75 23.5M14.5 28.75H23.5C24.7426 28.75 25.75 27.7426 25.75 26.5V17.5C25.75 16.2574 24.7426 15.25 23.5 15.25H14.5C13.2574 15.25 12.25 16.2574 12.25 17.5V26.5C12.25 27.7426 13.2574 28.75 14.5 28.75Z" stroke="#0F172A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+`
